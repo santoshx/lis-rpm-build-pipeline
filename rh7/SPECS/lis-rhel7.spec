@@ -92,6 +92,19 @@ export INSTALL_MOD_DIR=extra/%{name}
 for flavor in %flavors_to_build; do
         make -C %{kernel_source $flavor} M=$PWD/obj/$flavor modules_install
 done
+
+rhel_major=$(grep -Eoh [0-9]+\.[0-9]+ /etc/{issue,*release} | head -1 | awk -F'.' '{ print $1 }')
+rhel_minor=$(grep -Eoh [0-9]+\.[0-9]+ /etc/{issue,*release} | head -1 | awk -F'.' '{ print $2 }')
+rhel_release_code=$((rhel_major << 8 | rhel_minor))
+for flavor in %flavors_to_build; do
+	if [ $rhel_release_code -eq 1795 ]; then
+		echo "Install prebuilt mlx ofed kernel modules only for RHEL 7.3"
+		rm -rf /lib/modules/$flavor/extra/lis-mlx
+		mkdir -p /lib/modules/$flavor/extra/lis-mlx
+		cp mlnx-ofa_kernel-4.5_for-rhel-7.3/* /lib/modules/$flavor/extra/lis-mlx
+	fi
+done
+
 install -d -m0755 $RPM_BUILD_ROOT/etc/udev/rules.d/
 install    -m0644 source/100-balloon.rules $RPM_BUILD_ROOT/etc/udev/rules.d/
 install -d -m0755 $RPM_BUILD_ROOT/lib/udev/rules.d/
